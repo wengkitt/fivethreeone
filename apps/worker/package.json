@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fivethreeone/core": "workspace:*",
     "@fivethreeone/shared": "workspace:*",
     "@fivethreeone/db": "workspace:*",
     "drizzle-orm": "^0.43.1",

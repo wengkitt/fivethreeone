@@ -19,6 +19,7 @@
   "include": ["src", "worker-configuration.d.ts"],
   "references": [
     { "path": "../../packages/shared" },
+    { "path": "../../packages/core" },
     { "path": "../../packages/db" }
   ]
 }
