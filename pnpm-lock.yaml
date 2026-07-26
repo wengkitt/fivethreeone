@@ -81,6 +81,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@fivethreeone/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fivethreeone/db':
         specifier: workspace:*
         version: link:../../packages/db

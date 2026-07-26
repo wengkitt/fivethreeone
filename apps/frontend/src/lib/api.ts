@@ -53,3 +53,42 @@ export function getProfile() {
     plateIncrement: number;
   }>("/lifter/profile");
 }
+
+export function updateProfile(data: {
+  username?: string;
+  unitPreference?: "kg" | "lb";
+  plateIncrement?: number;
+}) {
+  return request<{
+    id: string;
+    userId: string;
+    username: string;
+    unitPreference: "kg" | "lb";
+    plateIncrement: number;
+  }>("/lifter/profile", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getTrainingMax() {
+  return request<Array<{
+    lift: string;
+    oneRm: number | null;
+    trainingMaxValue: number | null;
+    cycleNumber: number;
+    id: string | null;
+  }>>("/lifter/training-max");
+}
+
+export function updateTrainingMax(lift: string, oneRm: number) {
+  return request<{
+    lift: string;
+    oneRm: number;
+    trainingMaxValue: number;
+    cycleNumber: number;
+  }>(`/lifter/training-max/${lift}`, {
+    method: "PUT",
+    body: JSON.stringify({ oneRm }),
+  });
+}

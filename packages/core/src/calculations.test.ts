@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   calculateWeight,
+  calculateTmFromOneRm,
   estimate1RM,
   progressTm,
   getWeekPattern,
@@ -47,6 +48,31 @@ describe("calculateWeight", () => {
   it("handles 1lb increments", () => {
     expect(calculateWeight(100, 65, 1)).toBe(65);
     expect(calculateWeight(100, 65, 5)).toBe(65);
+  });
+});
+
+describe("calculateTmFromOneRm", () => {
+  it("calculates 90% of 1RM rounded to plate increment", () => {
+    expect(calculateTmFromOneRm(100, 5)).toBe(90);
+  });
+
+  it("rounds down to nearest 2.5kg increment", () => {
+    expect(calculateTmFromOneRm(102.5, 2.5)).toBe(90);
+    expect(calculateTmFromOneRm(105, 2.5)).toBe(92.5);
+  });
+
+  it("rounds down to nearest 5lb increment", () => {
+    expect(calculateTmFromOneRm(200, 5)).toBe(180);
+    expect(calculateTmFromOneRm(205, 5)).toBe(180);
+  });
+
+  it("returns 0 for very low 1RM", () => {
+    expect(calculateTmFromOneRm(1, 5)).toBe(0);
+  });
+
+  it("works with 0.5kg plate increment", () => {
+    expect(calculateTmFromOneRm(100, 0.5)).toBe(90);
+    expect(calculateTmFromOneRm(101, 0.5)).toBe(90.5);
   });
 });
 

@@ -10,6 +10,14 @@ export interface WeekPattern {
   sets: WeekSet[];
 }
 
+export function calculateTmFromOneRm(
+  oneRm: number,
+  plateIncrement: number,
+): number {
+  const raw = oneRm * 0.9;
+  return Math.floor(raw / plateIncrement) * plateIncrement;
+}
+
 export function calculateWeight(
   tm: number,
   percentage: number,

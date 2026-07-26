@@ -2,6 +2,7 @@ export type { Lifter, UnitPreference, PlateIncrement, MainLift, WeekNumber, Cycl
 
 export {
   calculateWeight,
+  calculateTmFromOneRm,
   estimate1RM,
   progressTm,
   getWeekPattern,
