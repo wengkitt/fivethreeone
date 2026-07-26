@@ -9,6 +9,7 @@ import { LoginPage } from "./routes/login"
 import { RegisterPage } from "./routes/register"
 import { OnboardingPage, ALL_LIFTS } from "./routes/onboarding"
 import { DashboardPage } from "./routes/dashboard"
+import { WorkoutPage } from "./routes/workout"
 import { fetchSession } from "./lib/auth-store"
 import { getTrainingMax } from "./lib/api"
 
@@ -86,12 +87,25 @@ const onboardingRoute = createRoute({
   component: OnboardingPage,
 })
 
+const workoutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workout/$liftId",
+  beforeLoad: async () => {
+    const session = await fetchSession()
+    if (!session) throw redirect({ to: "/login" })
+    const complete = await hasAllTrainingMaxes()
+    if (!complete) throw redirect({ to: "/onboarding" })
+  },
+  component: WorkoutPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
   loginRoute,
   registerRoute,
   onboardingRoute,
+  workoutRoute,
 ])
 
 export const router = createRouter({ routeTree })
