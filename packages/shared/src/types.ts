@@ -20,6 +20,13 @@ export type MainLift = (typeof MainLift)[keyof typeof MainLift];
 
 export type WeekNumber = 1 | 2 | 3 | 4;
 
+export interface WorkoutSet {
+  setNumber: number;
+  weight: number;
+  reps: number;
+  isAmrap: boolean;
+}
+
 export interface CycleInfo {
   cycleId: string;
   lifterId: string;
