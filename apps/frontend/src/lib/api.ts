@@ -92,3 +92,76 @@ export function updateTrainingMax(lift: string, oneRm: number) {
     body: JSON.stringify({ oneRm }),
   });
 }
+
+export interface LiftInfo {
+  id: string;
+  displayName: string;
+}
+
+export interface DayProgress {
+  week: number;
+  completed: boolean;
+}
+
+export interface LiftCycleInfo {
+  lift: string;
+  displayName: string;
+  cycleNumber: number;
+  trainingMax: number;
+  currentWeek: number;
+  progress: DayProgress[];
+}
+
+export interface DashboardLift {
+  id: string;
+  displayName: string;
+  cycleNumber: number;
+  trainingMax: number;
+  currentWeek: number;
+  progress: DayProgress[];
+}
+
+export interface DashboardWorkout {
+  lift: string;
+  displayName: string;
+  weekNumber: number;
+}
+
+export interface RecentWorkout {
+  id: string;
+  lift: string;
+  displayName: string;
+  weekNumber: number;
+  cycleNumber: number;
+  completedAt: string | null;
+}
+
+export interface PersonalRecordEntry {
+  lift: string;
+  displayName: string;
+  prType: string;
+  value: number;
+  achievedAt: string;
+}
+
+export interface DashboardData {
+  lifts: DashboardLift[];
+  todayWorkout: DashboardWorkout | null;
+  nextWorkout: DashboardWorkout | null;
+  recentWorkouts: RecentWorkout[];
+  personalRecords: PersonalRecordEntry[];
+  unitPreference: string;
+  hasCompletedWorkouts: boolean;
+}
+
+export function getLifts() {
+  return request<LiftInfo[]>("/lifts");
+}
+
+export function getLiftCycle(liftId: string) {
+  return request<LiftCycleInfo>(`/lifts/${liftId}/cycle`);
+}
+
+export function getDashboard() {
+  return request<DashboardData>("/dashboard");
+}
