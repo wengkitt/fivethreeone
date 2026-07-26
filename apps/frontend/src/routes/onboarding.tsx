@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router"
 import { getProfile, updateProfile, getTrainingMax, updateTrainingMax } from "../lib/api"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
 import { calculateTmFromOneRm } from "@fivethreeone/core"
+import { LIFT_LABELS } from "@fivethreeone/shared"
 
 const STEPS = [
   "Preferences",
@@ -14,12 +15,6 @@ const STEPS = [
 ] as const
 
 export const ALL_LIFTS = ["squat", "bench_press", "deadlift", "overhead_press"] as const
-const LIFT_LABELS: Record<string, string> = {
-  squat: "Squat",
-  bench_press: "Bench Press",
-  deadlift: "Deadlift",
-  overhead_press: "Overhead Press",
-}
 const PLATE_OPTIONS = [0.5, 1, 2.5, 5] as const
 
 export function OnboardingPage() {

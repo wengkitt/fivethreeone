@@ -26,6 +26,15 @@ export const mainLiftValues = [
   MainLift.overhead_press,
 ] as const satisfies readonly [string, ...string[]];
 
+export const LIFT_LABELS: Record<string, string> = {
+  squat: "Squat",
+  bench_press: "Bench Press",
+  deadlift: "Deadlift",
+  overhead_press: "Overhead Press",
+};
+
+export const LIFT_ORDER = ["squat", "bench_press", "deadlift", "overhead_press"] as const satisfies readonly MainLift[];
+
 export type WeekNumber = 1 | 2 | 3 | 4;
 
 export type WorkoutStatus = "in_progress" | "completed";

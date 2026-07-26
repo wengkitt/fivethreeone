@@ -8,7 +8,7 @@ import { RootLayout } from "./routes/__root"
 import { LoginPage } from "./routes/login"
 import { RegisterPage } from "./routes/register"
 import { OnboardingPage, ALL_LIFTS } from "./routes/onboarding"
-import App from "./App"
+import { DashboardPage } from "./routes/dashboard"
 import { fetchSession } from "./lib/auth-store"
 import { getTrainingMax } from "./lib/api"
 
@@ -38,8 +38,20 @@ const indexRoute = createRoute({
     if (!session) throw redirect({ to: "/login" })
     const complete = await hasAllTrainingMaxes()
     if (!complete) throw redirect({ to: "/onboarding" })
+    throw redirect({ to: "/dashboard" })
   },
-  component: App,
+})
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/dashboard",
+  beforeLoad: async () => {
+    const session = await fetchSession()
+    if (!session) throw redirect({ to: "/login" })
+    const complete = await hasAllTrainingMaxes()
+    if (!complete) throw redirect({ to: "/onboarding" })
+  },
+  component: DashboardPage,
 })
 
 const loginRoute = createRoute({
@@ -76,6 +88,7 @@ const onboardingRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  dashboardRoute,
   loginRoute,
   registerRoute,
   onboardingRoute,
