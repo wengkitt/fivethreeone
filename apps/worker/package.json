@@ -1,0 +1,21 @@
+{
+  "name": "@fivethreeone/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@fivethreeone/shared": "workspace:*",
+    "@fivethreeone/db": "workspace:*",
+    "hono": "^4.7.7",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "wrangler": "^4.114.0"
+  }
+}
