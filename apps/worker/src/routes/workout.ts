@@ -1,8 +1,8 @@
 import { eq, and } from "drizzle-orm";
 import { Hono } from "hono";
-import { createDbClient, lifter, trainingMax, workout, workoutSet, assistanceExercise } from "@fivethreeone/db";
+import { createDbClient, lifter, trainingMax, workout, workoutSet, assistanceExercise, personalRecord } from "@fivethreeone/db";
 import { successResponse, errorResponse, mainLiftValues, LIFT_LABELS, LIFT_ORDER, type MainLift, type WeekNumber } from "@fivethreeone/shared";
-import { generateWorkoutSets, getWeekPattern } from "@fivethreeone/core";
+import { generateWorkoutSets, getWeekPattern, progressTm } from "@fivethreeone/core";
 import { authMiddleware, getAuth } from "../middleware/auth.js";
 
 const VALID_PLATE_INCREMENTS = [0.5, 1, 2.5, 5] as const;
@@ -436,6 +436,81 @@ workoutRoutes.put("/workouts/:id", authMiddleware, async (c) => {
       templateName: e.templateName ?? null,
     }));
     await db.insert(assistanceExercise).values(exerciseValues as never);
+  }
+
+  if (wo.weekNumber !== 4) {
+    const cycleCompletedWorkouts = await db
+      .select()
+      .from(workout)
+      .where(
+        and(
+          eq(workout.lifterId, auth.lifterId),
+          eq(workout.lift, wo.lift),
+          eq(workout.cycleNumber, wo.cycleNumber),
+          eq(workout.status, "completed"),
+        ),
+      );
+
+    const completedNonDeloadWeeks = new Set(
+      cycleCompletedWorkouts
+        .filter((w) => w.weekNumber !== 4)
+        .map((w) => w.weekNumber),
+    );
+
+    if (completedNonDeloadWeeks.size === 3) {
+      const tmRecord = await db
+        .select()
+        .from(trainingMax)
+        .where(
+          and(
+            eq(trainingMax.lifterId, auth.lifterId),
+            eq(trainingMax.lift, wo.lift),
+          ),
+        )
+        .get();
+
+      if (tmRecord) {
+        const newTm = progressTm(tmRecord.trainingMaxValue, wo.lift as MainLift);
+        const newCycleNumber = tmRecord.cycleNumber + 1;
+
+        await db
+          .update(trainingMax)
+          .set({
+            trainingMaxValue: newTm,
+            cycleNumber: newCycleNumber,
+            updatedAt: now,
+          })
+          .where(eq(trainingMax.id, tmRecord.id));
+
+        const existingPrs = await db
+          .select()
+          .from(personalRecord)
+          .where(
+            and(
+              eq(personalRecord.lifterId, auth.lifterId),
+              eq(personalRecord.lift, wo.lift),
+              eq(personalRecord.prType, "tm"),
+            ),
+          );
+
+        const maxPreviousTm = existingPrs.reduce(
+          (max, pr) => Math.max(max, pr.value),
+          tmRecord.trainingMaxValue,
+        );
+
+        if (newTm > maxPreviousTm) {
+          await db.insert(personalRecord).values({
+            id: crypto.randomUUID(),
+            lifterId: auth.lifterId,
+            lift: wo.lift,
+            prType: "tm",
+            value: newTm,
+            achievedAt: now,
+            workoutId: id,
+          } as never);
+        }
+      }
+    }
   }
 
   const updatedSets = await db
