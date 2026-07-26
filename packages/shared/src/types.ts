@@ -4,6 +4,7 @@ export type PlateIncrement = 0.5 | 1 | 2.5 | 5;
 
 export interface Lifter {
   id: string;
+  userId: string;
   username: string;
   unitPreference: UnitPreference;
   plateIncrement: PlateIncrement;
@@ -18,13 +19,44 @@ export const MainLift = {
 
 export type MainLift = (typeof MainLift)[keyof typeof MainLift];
 
+export const mainLiftValues = [
+  MainLift.squat,
+  MainLift.bench_press,
+  MainLift.deadlift,
+  MainLift.overhead_press,
+] as const satisfies readonly [string, ...string[]];
+
 export type WeekNumber = 1 | 2 | 3 | 4;
+
+export type WorkoutStatus = "in_progress" | "completed";
+
+export const PrType = {
+  tm: "tm",
+  estimated_1rm: "estimated_1rm",
+  amrap_reps: "amrap_reps",
+} as const;
+
+export type PrType = (typeof PrType)[keyof typeof PrType];
+
+export const prTypeValues = [
+  PrType.tm,
+  PrType.estimated_1rm,
+  PrType.amrap_reps,
+] as const satisfies readonly [string, ...string[]];
 
 export interface WorkoutSet {
   setNumber: number;
   weight: number;
   reps: number;
   isAmrap: boolean;
+}
+
+export interface AssistanceExerciseItem {
+  name: string;
+  sets: number;
+  reps: number;
+  weight: number | null;
+  notes: string | null;
 }
 
 export interface CycleInfo {
