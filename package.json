@@ -1,29 +1,20 @@
 {
-	"name": "fivethreeone",
-	"private": true,
-	"version": "0.0.0",
-	"type": "module",
-	"scripts": {
-		"dev": "vite",
-		"build": "tsc -b && vite build",
-		"lint": "oxlint",
-		"preview": "pnpm run build && vite preview",
-		"deploy": "pnpm run build && wrangler deploy",
-		"cf-typegen": "wrangler types"
-	},
-	"dependencies": {
-		"react": "^19.2.7",
-		"react-dom": "^19.2.7"
-	},
-	"devDependencies": {
-		"@cloudflare/vite-plugin": "^1.47.0",
-		"@types/node": "^24.13.3",
-		"@types/react": "^19.2.17",
-		"@types/react-dom": "^19.2.3",
-		"@vitejs/plugin-react": "^6.0.3",
-		"oxlint": "^1.71.0",
-		"typescript": "~6.0.2",
-		"vite": "^8.1.1",
-		"wrangler": "^4.114.0"
-	}
+  "name": "fivethreeone",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm run --filter @fivethreeone/frontend dev",
+    "dev:worker": "pnpm run --filter @fivethreeone/worker dev",
+    "build": "pnpm run --recursive build",
+    "lint": "oxlint",
+    "typecheck": "tsc -b",
+    "preview": "pnpm run --filter @fivethreeone/frontend preview",
+    "deploy": "pnpm run build && pnpm run --filter @fivethreeone/worker deploy",
+    "cf-typegen": "pnpm run --filter @fivethreeone/worker cf-typegen"
+  },
+  "devDependencies": {
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2"
+  }
 }
