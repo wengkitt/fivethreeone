@@ -165,3 +165,101 @@ export function getLiftCycle(liftId: string) {
 export function getDashboard() {
   return request<DashboardData>("/dashboard");
 }
+
+// Workout types
+export interface WorkoutSetData {
+  id: string | null;
+  setNumber: number;
+  targetPercentage: number;
+  calculatedWeight: number;
+  actualWeight: number | null;
+  targetReps: number;
+  actualReps: number | null;
+  isAmrap: boolean;
+}
+
+export interface WorkoutCurrentData {
+  lift: string;
+  displayName: string;
+  weekNumber: number;
+  cycleNumber: number;
+  trainingMax: number;
+  status: "not_started" | "in_progress" | "completed";
+  workoutId: string | null;
+  sets: WorkoutSetData[];
+}
+
+export interface WorkoutDetail {
+  id: string;
+  lift: string;
+  weekNumber: number;
+  cycleNumber: number;
+  status: string;
+  notes: string | null;
+  completedAt: number | null;
+  createdAt: number;
+  sets: WorkoutSetData[];
+  assistanceExercises: AssistanceExerciseData[];
+}
+
+export interface AssistanceExerciseData {
+  id?: string;
+  exerciseName: string;
+  sets: number;
+  reps: number;
+  weight: number | null;
+  notes: string | null;
+  templateName?: string | null;
+}
+
+export interface TemplateData {
+  id: string;
+  name: string;
+  description?: string;
+  isBuiltIn: boolean;
+  exercises: AssistanceExerciseData[];
+  createdAt?: number;
+}
+
+export function getWorkoutsCurrent() {
+  return request<WorkoutCurrentData[]>("/workouts/current");
+}
+
+export function startWorkout(lift: string) {
+  return request<WorkoutDetail>("/workouts", {
+    method: "POST",
+    body: JSON.stringify({ lift }),
+  });
+}
+
+export function getWorkout(id: string) {
+  return request<WorkoutDetail>(`/workouts/${id}`);
+}
+
+export function completeWorkout(id: string, data: {
+  notes?: string | null;
+  sets?: { id: string; actualWeight: number | null; actualReps: number | null }[];
+  assistanceExercises?: AssistanceExerciseData[];
+}) {
+  return request<WorkoutDetail>(`/workouts/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getTemplates() {
+  return request<TemplateData[]>("/templates");
+}
+
+export function createTemplate(data: { name: string; exercises: AssistanceExerciseData[] }) {
+  return request<TemplateData>("/templates", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteTemplate(id: string) {
+  return request<{ deleted: boolean }>(`/templates/${id}`, {
+    method: "DELETE",
+  });
+}
