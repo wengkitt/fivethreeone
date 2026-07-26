@@ -11,6 +11,8 @@ let mockDbState: {
   workoutSets: MockRecord[];
   assistanceExercises: MockRecord[];
   assistanceTemplates: MockRecord[];
+  personalRecords: MockRecord[];
+  capturedUpdate: { table: string; data: Record<string, unknown> } | null;
 };
 
 function selectResult(tableName: string): MockRecord[] {
@@ -21,6 +23,7 @@ function selectResult(tableName: string): MockRecord[] {
     case "workoutSet": return mockDbState.workoutSets;
     case "assistanceExercise": return mockDbState.assistanceExercises;
     case "assistanceTemplate": return mockDbState.assistanceTemplates;
+    case "personalRecord": return mockDbState.personalRecords;
     default: return [];
   }
 }
@@ -52,12 +55,22 @@ vi.mock("@fivethreeone/db", () => {
     select: vi.fn(() => ({
       from: (table: MockTable) => getChain(table._tableName),
     })),
-    insert: vi.fn(() => ({
-      values: vi.fn().mockResolvedValue({}),
+    insert: vi.fn((table: MockTable) => ({
+      values: vi.fn((data: Record<string, unknown>) => {
+        if (table._tableName === "personalRecord") {
+          mockDbState.personalRecords.push(data);
+        }
+        return Promise.resolve({});
+      }),
     })),
-    update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: vi.fn().mockResolvedValue(undefined),
+    update: vi.fn((table: MockTable) => ({
+      set: vi.fn((data: Record<string, unknown>) => ({
+        where: vi.fn(() => {
+          if (table._tableName === "trainingMax") {
+            mockDbState.capturedUpdate = { table: table._tableName, data };
+          }
+          return Promise.resolve(undefined);
+        }),
       })),
     })),
     delete: vi.fn(() => ({
@@ -116,6 +129,8 @@ describe("GET /api/workouts/current", () => {
       workoutSets: [],
       assistanceExercises: [],
       assistanceTemplates: [],
+      personalRecords: [],
+      capturedUpdate: null,
     };
   });
 
@@ -279,6 +294,8 @@ describe("POST /api/workouts", () => {
       workoutSets: [],
       assistanceExercises: [],
       assistanceTemplates: [],
+      personalRecords: [],
+      capturedUpdate: null,
     };
   });
 
@@ -404,6 +421,8 @@ describe("GET /api/workouts/:id", () => {
       workoutSets: [],
       assistanceExercises: [],
       assistanceTemplates: [],
+      personalRecords: [],
+      capturedUpdate: null,
     };
   });
 
@@ -467,6 +486,8 @@ describe("PUT /api/workouts/:id", () => {
       workoutSets: [],
       assistanceExercises: [],
       assistanceTemplates: [],
+      personalRecords: [],
+      capturedUpdate: null,
     };
   });
 
@@ -517,5 +538,240 @@ describe("PUT /api/workouts/:id", () => {
       },
     );
     expect(res.status).toBe(404);
+  });
+
+  describe("cycle progression", () => {
+    function setupProgressionTest(overrides: {
+      lift?: string;
+      trainingMaxValue?: number;
+      cycleNumber?: number;
+      completedWeeks?: number[];
+      currentWeek?: number;
+      personalRecords?: MockRecord[];
+    }) {
+      const lift = overrides.lift ?? "squat";
+      const tmValue = overrides.trainingMaxValue ?? 100;
+      const cycle = overrides.cycleNumber ?? 1;
+      const completedWeeks = overrides.completedWeeks ?? [1, 2];
+      const currentWeek = overrides.currentWeek ?? 3;
+
+      mockDbState.lifter = {
+        id: "test-lifter-id",
+        weightUnit: "kg",
+        plateIncrement: 2500,
+      };
+      mockDbState.trainingMaxes = [
+        { id: "tm1", lifterId: "test-lifter-id", lift, oneRm: 111, trainingMaxValue: tmValue, cycleNumber: cycle },
+      ];
+      mockDbState.personalRecords = overrides.personalRecords ?? [];
+      mockDbState.workouts = [
+        {
+          id: "current-w",
+          lifterId: "test-lifter-id",
+          lift,
+          weekNumber: currentWeek,
+          cycleNumber: cycle,
+          status: "in_progress" as const,
+          notes: null,
+          completedAt: null,
+        },
+        ...completedWeeks.map((w, i) => ({
+          id: `w${i}`,
+          lifterId: "test-lifter-id",
+          lift,
+          weekNumber: w,
+          cycleNumber: cycle,
+          status: "completed" as const,
+          notes: null,
+          completedAt: Date.now(),
+        })),
+      ];
+      mockDbState.workoutSets = [];
+      return { lift, tmValue, cycle };
+    }
+
+    it("triggers TM increment after completing 3rd non-deload workout", async () => {
+      setupProgressionTest({ lift: "squat", trainingMaxValue: 100 });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "Hard session!" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      expect(mockDbState.capturedUpdate).not.toBeNull();
+      expect(mockDbState.capturedUpdate!.table).toBe("trainingMax");
+      expect(mockDbState.capturedUpdate!.data.trainingMaxValue).toBe(105);
+      expect(mockDbState.capturedUpdate!.data.cycleNumber).toBe(2);
+    });
+
+    it("increments bench press TM by 2.5kg", async () => {
+      setupProgressionTest({ lift: "bench_press", trainingMaxValue: 100 });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "Easy!" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      expect(mockDbState.capturedUpdate).not.toBeNull();
+      expect(mockDbState.capturedUpdate!.data.trainingMaxValue).toBe(102.5);
+      expect(mockDbState.capturedUpdate!.data.cycleNumber).toBe(2);
+    });
+
+    it("increments overhead press TM by 2.5kg", async () => {
+      setupProgressionTest({ lift: "overhead_press", trainingMaxValue: 60 });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "Tough" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      expect(mockDbState.capturedUpdate).not.toBeNull();
+      expect(mockDbState.capturedUpdate!.data.trainingMaxValue).toBe(62.5);
+      expect(mockDbState.capturedUpdate!.data.cycleNumber).toBe(2);
+    });
+
+    it("increments deadlift TM by 5kg", async () => {
+      setupProgressionTest({ lift: "deadlift", trainingMaxValue: 140 });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "Heavy!" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      expect(mockDbState.capturedUpdate).not.toBeNull();
+      expect(mockDbState.capturedUpdate!.data.trainingMaxValue).toBe(145);
+      expect(mockDbState.capturedUpdate!.data.cycleNumber).toBe(2);
+    });
+
+    it("deload workout (week 4) does not trigger progression", async () => {
+      setupProgressionTest({ completedWeeks: [1, 2, 3], currentWeek: 4 });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "Deload" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      expect(mockDbState.capturedUpdate).toBeNull();
+    });
+
+    it("completing week 1, 2, 4 (skipping week 3) does NOT trigger progression", async () => {
+      setupProgressionTest({ completedWeeks: [1, 2], currentWeek: 4 });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "Deload skip week 3" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+      expect(mockDbState.capturedUpdate).toBeNull();
+    });
+
+    it("same-week duplicate completions do not double-count", async () => {
+      mockDbState.lifter = {
+        id: "test-lifter-id",
+        weightUnit: "kg",
+        plateIncrement: 2500,
+      };
+      mockDbState.trainingMaxes = [
+        { id: "tm1", lifterId: "test-lifter-id", lift: "squat", oneRm: 111, trainingMaxValue: 100, cycleNumber: 1 },
+      ];
+      mockDbState.personalRecords = [];
+      mockDbState.workouts = [
+        { id: "current-w", lifterId: "test-lifter-id", lift: "squat", weekNumber: 3, cycleNumber: 1, status: "in_progress", notes: null, completedAt: null },
+        { id: "w1", lifterId: "test-lifter-id", lift: "squat", weekNumber: 1, cycleNumber: 1, status: "completed", notes: null, completedAt: Date.now() },
+        { id: "w1b", lifterId: "test-lifter-id", lift: "squat", weekNumber: 1, cycleNumber: 1, status: "completed", notes: null, completedAt: Date.now() },
+        { id: "w2", lifterId: "test-lifter-id", lift: "squat", weekNumber: 2, cycleNumber: 1, status: "completed", notes: null, completedAt: Date.now() },
+      ];
+      mockDbState.workoutSets = [];
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "Week 3" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      expect(mockDbState.capturedUpdate).not.toBeNull();
+      expect(mockDbState.capturedUpdate!.data.trainingMaxValue).toBe(105);
+      expect(mockDbState.capturedUpdate!.data.cycleNumber).toBe(2);
+    });
+
+    it("creates a PR when new TM exceeds previous max", async () => {
+      setupProgressionTest({ lift: "squat", trainingMaxValue: 100 });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "PR time!" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      expect(mockDbState.personalRecords.length).toBe(1);
+      expect(mockDbState.personalRecords[0].prType).toBe("tm");
+      expect(mockDbState.personalRecords[0].value).toBe(105);
+      expect(mockDbState.personalRecords[0].lift).toBe("squat");
+      expect(mockDbState.personalRecords[0].workoutId).toBe("current-w");
+    });
+
+    it("does not create a PR when new TM does not exceed historical max", async () => {
+      setupProgressionTest({
+        lift: "squat",
+        trainingMaxValue: 100,
+        personalRecords: [
+          { id: "pr1", lifterId: "test-lifter-id", lift: "squat", prType: "tm", value: 200, achievedAt: Date.now(), workoutId: null },
+        ],
+      });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "Not a PR" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      // TM still advances
+      expect(mockDbState.capturedUpdate).not.toBeNull();
+      expect(mockDbState.capturedUpdate!.data.trainingMaxValue).toBe(105);
+      // But no new PR
+      expect(mockDbState.personalRecords.length).toBe(1);
+      expect(mockDbState.personalRecords[0].value).toBe(200);
+    });
   });
 });
