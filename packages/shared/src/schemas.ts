@@ -24,8 +24,21 @@ export const weekNumberSchema = z.union([
   z.literal(4),
 ]);
 
+export const workoutStatusSchema = z.enum(["in_progress", "completed"]);
+
+export const prTypeSchema = z.enum(["tm", "estimated_1rm", "amrap_reps"]);
+
+export const assistanceExerciseItemSchema = z.object({
+  name: z.string(),
+  sets: z.number().int().positive(),
+  reps: z.number().int().positive(),
+  weight: z.number().nullable(),
+  notes: z.string().nullable(),
+});
+
 export const lifterSchema = z.object({
   id: z.string(),
+  userId: z.string(),
   username: z.string().min(1).max(50),
   unitPreference: unitPreferenceSchema,
   plateIncrement: plateIncrementSchema,
