@@ -112,6 +112,24 @@ export function DashboardPage() {
             <h1 className="text-lg font-bold">5/3/1</h1>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate({ to: "/pr" })}
+              className="rounded-md border border-input px-3 py-1.5 text-xs hover:bg-accent"
+            >
+              PRs
+            </button>
+            <button
+              onClick={() => navigate({ to: "/history" })}
+              className="rounded-md border border-input px-3 py-1.5 text-xs hover:bg-accent"
+            >
+              History
+            </button>
+            <button
+              onClick={() => navigate({ to: "/settings" })}
+              className="rounded-md border border-input px-3 py-1.5 text-xs hover:bg-accent"
+            >
+              Settings
+            </button>
             {session && (
               <span className="text-sm text-muted-foreground">{session.username}</span>
             )}

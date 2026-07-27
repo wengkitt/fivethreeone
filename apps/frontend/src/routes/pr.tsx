@@ -189,6 +189,12 @@ export function PersonalRecordsPage() {
             >
               Dashboard
             </button>
+            <button
+              onClick={() => navigate({ to: "/settings" })}
+              className="rounded-md border border-input px-3 py-1.5 text-xs hover:bg-accent"
+            >
+              Settings
+            </button>
             {session && (
               <span className="text-sm text-muted-foreground">{session.username}</span>
             )}

@@ -1,22 +1,22 @@
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { Hono } from "hono";
 
-vi.mock("@fivethreeone/db", () => {
-  const mockLifterTable = {
-    id: "test-lifter-id",
-    userId: "test-user-id",
-    username: "testuser",
-    weightUnit: "kg",
-    plateIncrement: 2500,
-  };
+const mockVerifyPassword = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+const mockHashPassword = vi.hoisted(() => vi.fn().mockResolvedValue("new-hash-value"));
 
+let mockGetResult: Record<string, unknown> | null = null;
+
+vi.mock("@fivethreeone/db", () => {
   const mockDb = {
     select: () => ({
       from: () => ({
         where: () => ({
-          get: vi.fn().mockResolvedValue(mockLifterTable),
+          get: vi.fn(() => Promise.resolve(mockGetResult)),
+          then: vi.fn((resolve: (val: unknown) => void) => resolve([])),
         }),
+        then: vi.fn((resolve: (val: unknown) => void) => resolve([])),
       }),
+      then: vi.fn((resolve: (val: unknown) => void) => resolve([])),
     }),
     insert: () => ({
       values: vi.fn().mockResolvedValue(undefined),
@@ -38,7 +38,7 @@ vi.mock("@fivethreeone/db", () => {
     trainingMax: { id: "training_max.id", lifterId: "training_max.lifter_id", lift: "training_max.lift", oneRm: "training_max.one_rm", trainingMaxValue: "training_max.training_max", cycleNumber: "training_max.cycle_number" },
     user: {},
     session: {},
-    account: {},
+    account: { id: "account.id", userId: "account.user_id", password: "account.password" },
     verification: {},
     workout: {},
     workoutSet: {},
@@ -57,6 +57,11 @@ vi.mock("../auth/session.js", () => ({
   }),
 }));
 
+vi.mock("../auth/crypto.js", () => ({
+  verifyPassword: mockVerifyPassword,
+  hashPassword: mockHashPassword,
+}));
+
 import lifterRoutes from "./lifter.js";
 
 function createApp() {
@@ -70,6 +75,16 @@ describe("lifter routes - auth guard", () => {
 
   beforeAll(() => {
     app = createApp();
+  });
+
+  beforeEach(() => {
+    mockGetResult = {
+      id: "test-lifter-id",
+      userId: "test-user-id",
+      username: "testuser",
+      weightUnit: "kg",
+      plateIncrement: 2500,
+    };
   });
 
   it("GET /api/lifter/profile returns 401 without auth", async () => {
@@ -102,10 +117,29 @@ describe("lifter routes - auth guard", () => {
     );
     expect(res.status).toBe(401);
   });
+
+  it("PUT /api/lifter/password returns 401 without auth", async () => {
+    const res = await app.request(
+      "/api/lifter/password",
+      { method: "PUT", body: JSON.stringify({ currentPassword: "old", newPassword: "new123" }), headers: { "Content-Type": "application/json" } },
+    );
+    expect(res.status).toBe(401);
+  });
 });
 
 describe("lifter routes - input validation", () => {
   let app: ReturnType<typeof createApp>;
+
+  beforeEach(() => {
+    mockGetResult = {
+      id: "test-lifter-id",
+      userId: "test-user-id",
+      username: "testuser",
+      weightUnit: "kg",
+      plateIncrement: 2500,
+    };
+    mockVerifyPassword.mockResolvedValue(true);
+  });
 
   beforeAll(() => {
     app = createApp();
@@ -139,5 +173,52 @@ describe("lifter routes - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json() as Record<string, unknown>;
     expect(json.error).toBe("Invalid 1RM value");
+  });
+
+  it("PUT /api/lifter/password returns 400 for missing fields", async () => {
+    const res = await app.request(
+      "/api/lifter/password",
+      { method: "PUT", body: JSON.stringify({}), headers: { "Content-Type": "application/json", Cookie: "session_token=test" } },
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json() as Record<string, unknown>;
+    expect(json.error).toBe("Current password and new password are required");
+  });
+
+  it("PUT /api/lifter/password returns 400 for short new password", async () => {
+    const res = await app.request(
+      "/api/lifter/password",
+      { method: "PUT", body: JSON.stringify({ currentPassword: "old", newPassword: "123" }), headers: { "Content-Type": "application/json", Cookie: "session_token=test" } },
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json() as Record<string, unknown>;
+    expect(json.error).toBe("New password must be at least 6 characters");
+  });
+
+  it("PUT /api/lifter/password returns 401 for incorrect current password", async () => {
+    mockVerifyPassword.mockResolvedValue(false);
+    mockGetResult = { id: "account-id", userId: "test-user-id", password: "hashed-old-password" };
+
+    const res = await app.request(
+      "/api/lifter/password",
+      { method: "PUT", body: JSON.stringify({ currentPassword: "wrong", newPassword: "newpassword123" }), headers: { "Content-Type": "application/json", Cookie: "session_token=test" } },
+    );
+    expect(res.status).toBe(401);
+    const json = await res.json() as Record<string, unknown>;
+    expect(json.error).toBe("Current password is incorrect");
+  });
+
+  it("PUT /api/lifter/password updates password successfully", async () => {
+    mockGetResult = { id: "account-id", userId: "test-user-id", password: "hashed-old-password" };
+
+    const res = await app.request(
+      "/api/lifter/password",
+      { method: "PUT", body: JSON.stringify({ currentPassword: "correct", newPassword: "newpassword123" }), headers: { "Content-Type": "application/json", Cookie: "session_token=test" } },
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json() as Record<string, unknown>;
+    expect(json.success).toBe(true);
+    expect(mockVerifyPassword).toHaveBeenCalledWith("correct", "hashed-old-password");
+    expect(mockHashPassword).toHaveBeenCalledWith("newpassword123");
   });
 });

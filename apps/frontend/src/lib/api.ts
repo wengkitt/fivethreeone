@@ -342,3 +342,19 @@ export function getPersonalRecords() {
 export function getLiftPersonalRecords(liftId: string) {
   return request<PersonalRecordItem[]>(`/personal-records/${liftId}`);
 }
+
+export function changePassword(currentPassword: string, newPassword: string) {
+  return request<{ message: string }>("/lifter/password", {
+    method: "PUT",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+export function resetTrainingMax() {
+  return request<Array<{
+    lift: string;
+    oneRm: number;
+    trainingMaxValue: number;
+    cycleNumber: number;
+  }>>("/lifter/training-max/reset", { method: "POST" });
+}
