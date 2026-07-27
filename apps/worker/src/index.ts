@@ -5,6 +5,8 @@ import lifterRoutes from "./routes/lifter.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import workoutRoutes from "./routes/workout.js";
 import templateRoutes from "./routes/templates.js";
+import historyRoutes from "./routes/history.js";
+import personalRecordRoutes from "./routes/personal-records.js";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -21,5 +23,7 @@ app.route("/api/auth", authRoutes);
 app.route("/api/lifter", lifterRoutes);
 app.route("/api", workoutRoutes);
 app.route("/api", templateRoutes);
+app.route("/api", historyRoutes);
+app.route("/api", personalRecordRoutes);
 
 export default app;

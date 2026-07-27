@@ -10,6 +10,8 @@ import { RegisterPage } from "./routes/register"
 import { OnboardingPage, ALL_LIFTS } from "./routes/onboarding"
 import { DashboardPage } from "./routes/dashboard"
 import { WorkoutPage } from "./routes/workout"
+import { HistoryPage, HistoryLiftPage } from "./routes/history"
+import { PersonalRecordsPage } from "./routes/pr"
 import { fetchSession } from "./lib/auth-store"
 import { getTrainingMax } from "./lib/api"
 
@@ -99,6 +101,42 @@ const workoutRoute = createRoute({
   component: WorkoutPage,
 })
 
+const historyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/history",
+  beforeLoad: async () => {
+    const session = await fetchSession()
+    if (!session) throw redirect({ to: "/login" })
+    const complete = await hasAllTrainingMaxes()
+    if (!complete) throw redirect({ to: "/onboarding" })
+  },
+  component: HistoryPage,
+})
+
+const historyLiftRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/history/$liftId",
+  beforeLoad: async () => {
+    const session = await fetchSession()
+    if (!session) throw redirect({ to: "/login" })
+    const complete = await hasAllTrainingMaxes()
+    if (!complete) throw redirect({ to: "/onboarding" })
+  },
+  component: HistoryLiftPage,
+})
+
+const prRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pr",
+  beforeLoad: async () => {
+    const session = await fetchSession()
+    if (!session) throw redirect({ to: "/login" })
+    const complete = await hasAllTrainingMaxes()
+    if (!complete) throw redirect({ to: "/onboarding" })
+  },
+  component: PersonalRecordsPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -106,6 +144,9 @@ const routeTree = rootRoute.addChildren([
   registerRoute,
   onboardingRoute,
   workoutRoute,
+  historyRoute,
+  historyLiftRoute,
+  prRoute,
 ])
 
 export const router = createRouter({ routeTree })

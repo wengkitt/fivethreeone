@@ -769,9 +769,102 @@ describe("PUT /api/workouts/:id", () => {
       // TM still advances
       expect(mockDbState.capturedUpdate).not.toBeNull();
       expect(mockDbState.capturedUpdate!.data.trainingMaxValue).toBe(105);
-      // But no new PR
+      // But no new PR (still 1 from setup)
       expect(mockDbState.personalRecords.length).toBe(1);
       expect(mockDbState.personalRecords[0].value).toBe(200);
+    });
+
+    it("creates estimated_1rm PR when AMRAP set exceeds previous best", async () => {
+      setupProgressionTest({ lift: "squat", trainingMaxValue: 100, completedWeeks: [1] });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            notes: "AMRAP PR!",
+            sets: [
+              { id: "ws1", actualWeight: 65, actualReps: 5, isAmrap: false },
+              { id: "ws2", actualWeight: 67.5, actualReps: 5, isAmrap: false },
+              { id: "ws3", actualWeight: 75, actualReps: 8, isAmrap: true },
+            ],
+          }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      const estimatedPr = mockDbState.personalRecords.find((pr: MockRecord) => pr.prType === "estimated_1rm");
+      expect(estimatedPr).toBeDefined();
+      expect((estimatedPr!.value as number)).toBeCloseTo(94.98, 1);
+      expect(estimatedPr!.lift).toBe("squat");
+      expect(estimatedPr!.workoutId).toBe("current-w");
+    });
+
+    it("creates amrap_reps PR when AMRAP rep count exceeds previous best", async () => {
+      setupProgressionTest({ lift: "squat", trainingMaxValue: 100, completedWeeks: [1] });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            notes: "AMRAP record!",
+            sets: [
+              { id: "ws1", actualWeight: 65, actualReps: 5, isAmrap: false },
+              { id: "ws2", actualWeight: 67.5, actualReps: 5, isAmrap: false },
+              { id: "ws3", actualWeight: 75, actualReps: 10, isAmrap: true },
+            ],
+          }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      const amrapPr = mockDbState.personalRecords.find((pr) => pr.prType === "amrap_reps");
+      expect(amrapPr).toBeDefined();
+      expect(amrapPr!.value).toBe(10);
+      expect(amrapPr!.lift).toBe("squat");
+      expect(amrapPr!.workoutId).toBe("current-w");
+    });
+
+    it("does not create estimated_1rm PR if no AMRAP set data provided", async () => {
+      setupProgressionTest({ lift: "squat", trainingMaxValue: 100 });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({ notes: "No sets" }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      const estimatedPr = mockDbState.personalRecords.find((pr) => pr.prType === "estimated_1rm");
+      expect(estimatedPr).toBeUndefined();
+    });
+
+    it("creates both estimated_1rm and amrap_reps PRs in same workout", async () => {
+      setupProgressionTest({ lift: "squat", trainingMaxValue: 100, completedWeeks: [1] });
+
+      const res = await app.request(
+        "/api/workouts/current-w",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            notes: "Double PR!",
+            sets: [{ id: "ws3", actualWeight: 75, actualReps: 9, isAmrap: true }],
+          }),
+          headers: { "Content-Type": "application/json", Cookie: "session_token=test" },
+        },
+      );
+      expect(res.status).toBe(200);
+
+      const estimatedPr = mockDbState.personalRecords.find((pr) => pr.prType === "estimated_1rm");
+      const amrapPr = mockDbState.personalRecords.find((pr) => pr.prType === "amrap_reps");
+      expect(estimatedPr).toBeDefined();
+      expect(amrapPr).toBeDefined();
     });
   });
 });

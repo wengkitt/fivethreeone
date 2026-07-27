@@ -8,7 +8,7 @@ import {
 } from "../lib/api"
 import { convertWeight } from "@fivethreeone/shared"
 import {
-  Dumbbell, ArrowLeft, Check, Plus, X, AlertCircle, Flame,
+  ArrowLeft, Check, Plus, X, AlertCircle, Flame,
 } from "lucide-react"
 import { LIFT_LABELS } from "@fivethreeone/shared"
 
@@ -28,7 +28,7 @@ type PageState = "loading" | "ready" | "error"
 export function WorkoutPage() {
   const navigate = useNavigate()
   const { liftId } = useParams({ from: "/workout/$liftId" })
-  const { session } = useAuth()
+  useAuth()
 
   const [pageState, setPageState] = useState<PageState>("loading")
   const [error, setError] = useState<string | null>(null)
@@ -530,7 +530,7 @@ function AssistanceForm({
                 <p className="text-xs text-muted-foreground">{t.description}</p>
               )}
               <p className="mt-1 text-xs text-muted-foreground">
-                {t.exercises.map((e) => `${e.sets}×${e.reps} ${e.name}`).join(", ")}
+                {t.exercises.map((e) => `${e.sets}×${e.reps} ${e.exerciseName}`).join(", ")}
               </p>
             </button>
           ))}
