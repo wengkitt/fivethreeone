@@ -12,6 +12,7 @@ import { DashboardPage } from "./routes/dashboard"
 import { WorkoutPage } from "./routes/workout"
 import { HistoryPage, HistoryLiftPage } from "./routes/history"
 import { PersonalRecordsPage } from "./routes/pr"
+import { SettingsPage } from "./routes/settings"
 import { fetchSession } from "./lib/auth-store"
 import { getTrainingMax } from "./lib/api"
 
@@ -137,6 +138,18 @@ const prRoute = createRoute({
   component: PersonalRecordsPage,
 })
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  beforeLoad: async () => {
+    const session = await fetchSession()
+    if (!session) throw redirect({ to: "/login" })
+    const complete = await hasAllTrainingMaxes()
+    if (!complete) throw redirect({ to: "/onboarding" })
+  },
+  component: SettingsPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -147,6 +160,7 @@ const routeTree = rootRoute.addChildren([
   historyRoute,
   historyLiftRoute,
   prRoute,
+  settingsRoute,
 ])
 
 export const router = createRouter({ routeTree })
