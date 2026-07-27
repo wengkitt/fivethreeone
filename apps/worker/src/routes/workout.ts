@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { Hono } from "hono";
 import { createDbClient, lifter, trainingMax, workout, workoutSet, assistanceExercise, personalRecord } from "@fivethreeone/db";
 import { successResponse, errorResponse, mainLiftValues, LIFT_LABELS, LIFT_ORDER, type MainLift, type WeekNumber } from "@fivethreeone/shared";
-import { generateWorkoutSets, getWeekPattern, progressTm } from "@fivethreeone/core";
+import { generateWorkoutSets, getWeekPattern, progressTm, estimate1RM } from "@fivethreeone/core";
 import { authMiddleware, getAuth } from "../middleware/auth.js";
 
 const VALID_PLATE_INCREMENTS = [0.5, 1, 2.5, 5] as const;
@@ -389,7 +389,7 @@ workoutRoutes.put("/workouts/:id", authMiddleware, async (c) => {
 
   const body = await c.req.json<{
     notes?: string | null;
-    sets?: { id: string; actualWeight: number | null; actualReps: number | null }[];
+    sets?: { id: string; actualWeight: number | null; actualReps: number | null; isAmrap?: boolean }[];
     assistanceExercises?: {
       exerciseName: string;
       sets: number;
@@ -509,6 +509,70 @@ workoutRoutes.put("/workouts/:id", authMiddleware, async (c) => {
             workoutId: id,
           } as never);
         }
+      }
+    }
+  }
+
+  const amrapSetsFromBody = body.sets ? body.sets.filter((s) => s.isAmrap) : [];
+
+  for (const amrapSet of amrapSetsFromBody) {
+    if (amrapSet.actualWeight != null && amrapSet.actualReps != null && amrapSet.actualReps > 0) {
+      const estimated = estimate1RM(amrapSet.actualWeight, amrapSet.actualReps);
+
+      const existingAmrapPrs = await db
+        .select()
+        .from(personalRecord)
+        .where(
+          and(
+            eq(personalRecord.lifterId, auth.lifterId),
+            eq(personalRecord.lift, wo.lift),
+            eq(personalRecord.prType, "amrap_reps"),
+          ),
+        );
+
+      const maxAmrapReps = existingAmrapPrs.reduce(
+        (max, pr) => Math.max(max, pr.value),
+        0,
+      );
+
+      if (amrapSet.actualReps > maxAmrapReps) {
+        await db.insert(personalRecord).values({
+          id: crypto.randomUUID(),
+          lifterId: auth.lifterId,
+          lift: wo.lift,
+          prType: "amrap_reps",
+          value: amrapSet.actualReps,
+          achievedAt: now,
+          workoutId: id,
+        } as never);
+      }
+
+      const existingEstimatedPrs = await db
+        .select()
+        .from(personalRecord)
+        .where(
+          and(
+            eq(personalRecord.lifterId, auth.lifterId),
+            eq(personalRecord.lift, wo.lift),
+            eq(personalRecord.prType, "estimated_1rm"),
+          ),
+        );
+
+      const maxEstimated1RM = existingEstimatedPrs.reduce(
+        (max, pr) => Math.max(max, pr.value),
+        0,
+      );
+
+      if (estimated > maxEstimated1RM) {
+        await db.insert(personalRecord).values({
+          id: crypto.randomUUID(),
+          lifterId: auth.lifterId,
+          lift: wo.lift,
+          prType: "estimated_1rm",
+          value: estimated,
+          achievedAt: now,
+          workoutId: id,
+        } as never);
       }
     }
   }

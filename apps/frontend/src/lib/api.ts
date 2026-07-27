@@ -263,3 +263,82 @@ export function deleteTemplate(id: string) {
     method: "DELETE",
   });
 }
+
+// History types
+export interface HistoryWorkoutSet {
+  id: string;
+  setNumber: number;
+  targetPercentage: number;
+  calculatedWeight: number;
+  actualWeight: number | null;
+  targetReps: number;
+  actualReps: number | null;
+  isAmrap: boolean;
+}
+
+export interface HistoryAssistanceExercise {
+  id: string;
+  exerciseName: string;
+  sets: number;
+  reps: number;
+  weight: number | null;
+  notes: string | null;
+  templateName: string | null;
+}
+
+export interface HistoryWorkout {
+  id: string;
+  lift: string;
+  displayName: string;
+  weekNumber: number;
+  cycleNumber: number;
+  notes: string | null;
+  completedAt: string | null;
+  createdAt: string | null;
+  sets: HistoryWorkoutSet[];
+  assistanceExercises: HistoryAssistanceExercise[];
+}
+
+export interface HistoryResponse {
+  workouts: HistoryWorkout[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export function getWorkouts(params?: { lift?: string; cycle?: string; page?: number; limit?: number }) {
+  const searchParams = new URLSearchParams();
+  if (params?.lift) searchParams.set("lift", params.lift);
+  if (params?.cycle) searchParams.set("cycle", params.cycle);
+  if (params?.page) searchParams.set("page", String(params.page));
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+  const qs = searchParams.toString();
+  return request<HistoryResponse>(`/workouts${qs ? `?${qs}` : ""}`);
+}
+
+export function getLiftHistory(liftId: string) {
+  return request<HistoryWorkout[]>(`/lifts/${liftId}/history`);
+}
+
+// Personal Records types
+export interface PersonalRecordItem {
+  id: string;
+  lift: string;
+  displayName: string;
+  prType: string;
+  value: number;
+  achievedAt: string;
+  workoutId: string | null;
+}
+
+export interface PersonalRecordsResponse {
+  grouped: Record<string, PersonalRecordItem[]>;
+}
+
+export function getPersonalRecords() {
+  return request<PersonalRecordsResponse>("/personal-records");
+}
+
+export function getLiftPersonalRecords(liftId: string) {
+  return request<PersonalRecordItem[]>(`/personal-records/${liftId}`);
+}
