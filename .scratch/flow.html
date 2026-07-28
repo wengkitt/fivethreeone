@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5/3/1 Workout Tracker — Flow</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 2rem;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+    color: #f8fafc;
+  }
+  .subtitle {
+    color: #94a3b8;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+  }
+  .subtitle a { color: #38bdf8; }
+  section {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #334155;
+  }
+  h2 {
+    font-size: 1.25rem;
+    color: #38bdf8;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #334155;
+  }
+  .mermaid { background: transparent !important; }
+  .note {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: #0f172a;
+    border-left: 3px solid #38bdf8;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    border: 1px solid #334155;
+  }
+  .card h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+  }
+  .card code {
+    display: block;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    color: #a5b4fc;
+    line-height: 1.6;
+    margin-bottom: 0.35rem;
+  }
+  .card .arrow { color: #64748b; margin: 0 0.3rem; }
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.35rem;
+  }
+  .tag-fe { background: #1e3a5f; color: #60a5fa; }
+  .tag-be { background: #3b1f3b; color: #c084fc; }
+  .tag-db { background: #1e3a2f; color: #34d399; }
+  .tag-core { background: #3b2f1f; color: #fbbf24; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>5/3/1 Workout Tracker — User &amp; Data Flow</h1>
+<p class="subtitle">
+  Monorepo: <code>apps/frontend</code> (React SPA) · <code>apps/worker</code> (Cloudflare Workers API) ·
+  <code>packages/core</code> · <code>packages/db</code> · <code>packages/shared</code>
+</p>
+
+<!-- ==================== USER FLOW ==================== -->
+<section>
+<h2>User Flow</h2>
+<div class="mermaid">
+flowchart TB
+  L[Landing Page<br/><code>/</code>] --> R{Authenticated?}
+
+  R -- No --> LOGIN[Login<br/><code>/login</code>]
+  R -- No --> REG[Register<br/><code>/register</code>]
+  R -- Yes --> DASH
+
+  LOGIN --> DASH{<code>/dashboard</code>}
+  REG --> DASH
+
+  DASH -- Has active block? --> BLOCK_VIEW[View Block<br/>Lifts × Weeks × Cycles]
+  DASH -- No active block --> CREATE[Create Block<br/><code>/create-block</code>]
+
+  CREATE --> DASH
+
+  BLOCK_VIEW --> WEEK{Week?}
+
+  WEEK -- W1-W3 (Work) --> LIFT_CARD[Lift Cards<br/>Warmup + Working Sets]
+  WEEK -- W4 (Deload) --> LIFT_CARD
+
+  LIFT_CARD --> TICK[Tick Workout<br/><code>POST /blocks/:id/tick</code>]
+
+  TICK --> COMPLETE{Block<br/>complete?}
+  COMPLETE -- No --> DASH
+  COMPLETE -- Yes --> CREATE
+
+  TICK -.-> SKIP[Skip Deload<br/><code>POST /blocks/:id/skip-deload</code>]
+
+  SUBGRAPH["Navigation &amp; Settings"]
+  SUBGRAPH --> SETTINGS[Settings<br/><code>/settings</code>]
+  SUBGRAPH --> HIST[History<br/><code>/history</code>]
+</div>
+<div class="note">
+  <strong>Key:</strong> 1 block = 4 lifts × 4 cycles × 4 weeks = <strong>64 workout days</strong> to complete.
+  Training Max (TM) auto-progresses between cycles: +5 kg for lower body, +2.5 kg for upper body.
+</div>
+</section>
+
+<!-- ==================== DATA FLOW ==================== -->
+<section>
+<h2>Data Flow Architecture</h2>
+<div class="mermaid">
+sequenceDiagram
+  participant B as Browser (React SPA)
+  participant CF as Cloudflare Workers<br/>(Hono API)
+  participant D1 as D1 Database<br/>(SQLite)
+
+  Note over B,D1: Session cookie (httpOnly) sent automatically via credentials: "include"
+
+  B->>CF: POST /api/auth/register { username, email, password }
+  CF->>D1: INSERT user + account + lifter (batch)
+  CF->>D1: INSERT session
+  CF-->>B: Set-Cookie: session_token=abc; 200 { lifterId, username }
+
+  B->>CF: POST /api/auth/login { login, password }
+  CF->>D1: SELECT lifter → user → account
+  CF->>D1: INSERT session
+  CF-->>B: Set-Cookie: session_token=abc; 200 { lifterId, username }
+
+  Note over B,D1: ─── Authenticated requests below ───
+
+  B->>CF: GET /api/blocks
+  CF->>D1: SELECT * FROM block WHERE lifter_id = ?
+  D1-->>CF: Block[]
+  CF-->>B: { success, data: BlockListItem[] }
+
+  B->>CF: POST /api/blocks { squat, bench_press, deadlift, overhead_press }
+  CF->>D1: INSERT block (with 64 pending workout_days)
+  D1-->>CF: Block
+  CF-->>B: { success, data: Block }
+
+  B->>CF: GET /api/blocks/:id
+  CF->>D1: SELECT block + workout_days
+  D1-->>CF: BlockDetail
+  CF-->>B: { success, data: BlockDetail }
+
+  B->>CF: POST /api/blocks/:id/tick { lift, cycleNumber, weekNumber }
+  CF->>D1: UPSERT workout_day SET status='completed'
+  CF->>D1: SELECT COUNT(*) WHERE block_id=? AND status IN ('completed','skipped')
+  alt COUNT >= 64
+    CF->>D1: UPDATE block SET status='completed'
+  end
+  D1-->>CF: { completed, blockComplete? }
+  CF-->>B: { success, data: { completed } }
+
+  B->>CF: POST /api/blocks/:id/skip-deload { cycleNumber }
+  CF->>D1: UPSERT 4 workout_days SET status='skipped'
+  D1-->>CF: success
+  CF-->>B: { success }
+</div>
+<div class="note">
+  <strong>Cookie flow:</strong> <code>session_token</code> is httpOnly, secure, SameSite=Lax.
+  Worker reads it from the <code>Cookie</code> header, validates against the <code>session</code> table,
+  and sets <code>userId</code>, <code>lifterId</code>, <code>username</code> on the Hono context.
+</div>
+</section>
+
+<!-- ==================== DETAILED DATA FLOW ==================== -->
+<section>
+<h2>Request / Response Details</h2>
+<div class="grid">
+  <div class="card">
+    <h3>POST /api/blocks — Create Block</h3>
+    <code><span class="tag tag-fe">Request</span></code>
+    <code>{</code>
+    <code>  squat:       { weight: 100, reps: 5 },</code>
+    <code>  bench_press: { weight: 80,  reps: 5 },</code>
+    <code>  deadlift:    { weight: 140, reps: 5 },</code>
+    <code>  overhead_press: { weight: 50, reps: 5 }</code>
+    <code>}</code>
+    <code><span class="tag tag-be">Worker</span> <span class="arrow">→</span> validate no active block</code>
+    <code><span class="tag tag-be">Worker</span> <span class="arrow">→</span> estimate1RM → calculateTmFromOneRm</code>
+    <code><span class="tag tag-db">D1</span> <span class="arrow">→</span> INSERT block</code>
+    <code><span class="tag tag-fe">Response</span></code>
+    <code>{ success: true, data: { id, status: "active", ... } }</code>
+  </div>
+
+  <div class="card">
+    <h3>GET /api/blocks/:id — Block Detail</h3>
+    <code><span class="tag tag-be">Worker</span> <span class="arrow">→</span> auth check (cookie → session)</code>
+    <code><span class="tag tag-db">D1</span> <span class="arrow">→</span> SELECT block</code>
+    <code><span class="tag tag-db">D1</span> <span class="arrow">→</span> SELECT workout_days</code>
+    <code><span class="tag tag-be">Worker</span> <span class="arrow">→</span> group by cycle → week</code>
+    <code><span class="tag tag-core">@core</span> <span class="arrow">→</span> generateWorkoutSets(tm, week)</code>
+    <code><span class="tag tag-fe">Response</span></code>
+    <code>{ success: true, data: { block, workoutDays } }</code>
+  </div>
+
+  <div class="card">
+    <h3>POST /api/blocks/:id/tick — Complete Day</h3>
+    <code><span class="tag tag-fe">Request</span></code>
+    <code>{ lift: "squat", cycleNumber: 1, weekNumber: 2 }</code>
+    <code><span class="tag tag-db">D1</span> <span class="arrow">→</span> UPSERT workout_day</code>
+    <code><span class="tag tag-db">D1</span> <span class="arrow">→</span> COUNT completed+skipped</code>
+    <code><span class="tag tag-be">Worker</span> <span class="arrow">→</span> if count ≥ 64 → complete block</code>
+    <code><span class="tag tag-fe">Response</span></code>
+    <code>{ success: true, data: { completed: true } }</code>
+  </div>
+
+  <div class="card">
+    <h3>GET /api/auth/session — Session Check</h3>
+    <code><span class="tag tag-fe">Request</span></code>
+    <code>Cookie: session_token=abc123</code>
+    <code><span class="tag tag-db">D1</span> <span class="arrow">→</span> SELECT session WHERE token = ?</code>
+    <code><span class="tag tag-be">Worker</span> <span class="arrow">→</span> check expires_at > now</code>
+    <code><span class="tag tag-fe">Response</span></code>
+    <code>{ success: true, data: { userId, lifterId, username } }</code>
+  </div>
+</div>
+</section>
+
+<!-- ==================== DATABASE SCHEMA ==================== -->
+<section>
+<h2>Database Schema (D1 / SQLite)</h2>
+<div class="mermaid">
+erDiagram
+  user ||--o{ session : has
+  user ||--|| lifter : has
+  user ||--o{ account : has
+  lifter ||--o{ block : trains
+  block ||--o{ workout_day : contains
+
+  user {
+    text id PK
+    text name
+    text email UK
+    boolean email_verified
+    text image "nullable"
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  session {
+    text id PK
+    text token UK
+    timestamp expires_at
+    text user_id FK
+    text ip_address "nullable"
+    text user_agent "nullable"
+  }
+
+  account {
+    text id PK
+    text user_id FK
+    text provider_id "'credential'"
+    text password "PBKDF2 hash"
+  }
+
+  lifter {
+    text id PK
+    text user_id FK UK
+    text username UK
+    text weight_unit "'kg' | 'lb'"
+    int plate_increment "x100, default 2500"
+  }
+
+  block {
+    text id PK
+    text lifter_id FK
+    text status "'active' | 'completed'"
+    real squat_weight
+    int squat_reps
+    real bench_press_weight
+    int bench_press_reps
+    real deadlift_weight
+    int deadlift_reps
+    real overhead_press_weight
+    int overhead_press_reps
+  }
+
+  workout_day {
+    text id PK
+    text block_id FK
+    text lift "squat | bench_press | deadlift | overhead_press"
+    int cycle_number "1-4"
+    int week_number "1-4"
+    text status "'pending' | 'completed' | 'skipped'"
+    timestamp completed_at "nullable"
+  }
+</div>
+<div class="note">
+  Auth tables (<code>user</code>, <code>session</code>, <code>account</code>, <code>verification</code>) follow the Better Auth schema.
+  Domain tables (<code>lifter</code>, <code>block</code>, <code>workout_day</code>) are custom.
+  Password hashing: PBKDF2-SHA256, 100k iterations, format <code>salt:derivedKey</code>.
+</div>
+</section>
+
+<!-- ==================== CORE CALCULATIONS ==================== -->
+<section>
+<h2>Business Logic — 5/3/1 Calculations</h2>
+<div class="mermaid">
+flowchart LR
+  RM[Rep Max<br/>weight × reps] --> EST[estimate1RM<br/>Epley Formula]
+  EST --> TM[calculateTmFromOneRm<br/>90% ↓ plate inc]
+  TM --> PROG["progressTm<br/>S/DL: +5 kg<br/>BP/OHP: +2.5 kg"]
+  PROG --> PAT[getWeekPattern]
+
+  PAT --> W1["Week 1 (5/5/5+)<br/>65%×5, 75%×5, 85%×5+"]
+  PAT --> W2["Week 2 (3/3/3+)<br/>70%×3, 80%×3, 90%×3+"]
+  PAT --> W3["Week 3 (5/3/1+)<br/>75%×5, 85%×3, 95%×1+"]
+  PAT --> W4["Week 4 (Deload)<br/>40%×5, 50%×5, 60%×5"]
+
+  W1 --> SETS[generateWorkoutSets<br/>TM × % ÷ plate ↓]
+  W2 --> SETS
+  W3 --> SETS
+  W4 --> SETS
+
+  SETS --> OUT[WorkoutSet[]<br/>setNumber, weight, reps, isAmrap]
+
+  style RM fill:#1e3a5f,color:#60a5fa
+  style EST fill:#1e3a5f,color:#60a5fa
+  style TM fill:#1e3a5f,color:#60a5fa
+  style PROG fill:#3b1f3b,color:#c084fc
+  style PAT fill:#3b2f1f,color:#fbbf24
+  style SETS fill:#1e3a2f,color:#34d399
+  style OUT fill:#1e3a2f,color:#34d399
+</div>
+<div class="note">
+  <strong>Epley formula:</strong> 1RM = weight × reps × 0.0333 + weight<br/>
+  <strong>Training Max:</strong> TM = floor(1RM × 0.9 ÷ plateInc) × plateInc<br/>
+  <strong>Working weight:</strong> weight = floor(TM × % ÷ plateInc) × plateInc<br/>
+  <strong>Cycle TM progression:</strong> each cycle applies <code>progressTm</code> cumulatively.
+  <code>+</code> suffix on reps = AMRAP (as many reps as possible).
+</div>
+</section>
+
+<!-- ==================== PACKAGE DEPENDENCIES ==================== -->
+<section>
+<h2>Package Dependency Graph</h2>
+<div class="mermaid">
+flowchart TB
+  FE[apps/frontend<br/>React 19 + TanStack Router<br/>Vite + Tailwind v4]
+  WK[apps/worker<br/>Cloudflare Workers<br/>Hono + Drizzle]
+  CORE[packages/core<br/>5/3/1 Calculations]
+  DB[packages/db<br/>Schema + Client<br/>Drizzle ORM]
+  SHARED[packages/shared<br/>Types + Zod + API helpers]
+
+  FE --> CORE
+  FE --> SHARED
+  WK --> CORE
+  WK --> DB
+  WK --> SHARED
+  DB --> SHARED
+
+  WK -.-> D1[(D1 SQLite)]
+
+  style FE fill:#1e3a5f,color:#60a5fa
+  style WK fill:#3b1f3b,color:#c084fc
+  style CORE fill:#3b2f1f,color:#fbbf24
+  style DB fill:#1e3a2f,color:#34d399
+  style SHARED fill:#1e293b,color:#94a3b8
+  style D1 fill:#1e293b,color:#e2e8f0
+</div>
+</section>
+
+</div>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { darkMode: true, background: '#0f172a', primaryColor: '#1e293b', primaryTextColor: '#e2e8f0', primaryBorderColor: '#334155', lineColor: '#475569', secondaryColor: '#1e3a5f', tertiaryColor: '#3b1f3b', clusterBkg: '#1e293b', clusterBorder: '#334155' } });</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ import {
   redirect,
 } from "@tanstack/react-router"
 import { RootLayout } from "./routes/__root"
+import { LandingPage } from "./routes/landing"
 import { LoginPage } from "./routes/login"
 import { RegisterPage } from "./routes/register"
 import { DashboardPage } from "./routes/dashboard"
@@ -33,11 +34,9 @@ const indexRoute = createRoute({
   path: "/",
   beforeLoad: async () => {
     const session = await fetchSession()
-    if (!session) throw redirect({ to: "/login" })
-    const hasBlock = await hasActiveBlock()
-    if (!hasBlock) throw redirect({ to: "/create-block" })
-    throw redirect({ to: "/dashboard" })
+    if (session) throw redirect({ to: "/dashboard" })
   },
+  component: LandingPage,
 })
 
 const dashboardRoute = createRoute({
@@ -67,7 +66,7 @@ const loginRoute = createRoute({
   path: "/login",
   beforeLoad: async () => {
     const session = await fetchSession()
-    if (session) throw redirect({ to: "/" })
+    if (session) throw redirect({ to: "/dashboard" })
   },
   component: LoginPage,
 })
@@ -77,7 +76,7 @@ const registerRoute = createRoute({
   path: "/register",
   beforeLoad: async () => {
     const session = await fetchSession()
-    if (session) throw redirect({ to: "/" })
+    if (session) throw redirect({ to: "/dashboard" })
   },
   component: RegisterPage,
 })

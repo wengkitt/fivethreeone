@@ -48,6 +48,9 @@ _Avoid_: Recovery week, rest week
 One Main Lift on a given week. Tracked by a single tick when completed. No per-set data (weight, reps) is logged during the workout.
 _Avoid_: Session, workout set entry
 
+**Landing Page**:
+The public root page (`/`) describing the app. Unauthenticated visitors see it; authenticated visitors are redirected to `/dashboard`. Contains a hero section ("Jim Wendler's 5/3/1"), a tagline, and two CTAs: "Get Started" → `/register` and "Sign In" → `/login`.
+
 **Settings**:
 Username, password change, and logout only. No preferences (kg/lb, plate increment) and no Training Max editing — those are replaced by Block creation.
 _Avoid_: Preferences, theme, training max editor

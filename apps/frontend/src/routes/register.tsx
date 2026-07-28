@@ -27,7 +27,15 @@ export function RegisterPage() {
   return (
     <div className="flex min-h-svh items-center justify-center">
       <div className="w-full max-w-sm space-y-6 rounded-lg border border-border p-8">
-        <h1 className="text-2xl font-bold">Create Account</h1>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Create Account</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            or{" "}
+            <Link to="/" className="text-primary underline-offset-4 hover:underline">
+              back to home
+            </Link>
+          </p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="username" className="text-sm font-medium">
