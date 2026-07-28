@@ -1,4 +1,4 @@
-export type { Lifter, UnitPreference, PlateIncrement, MainLift, WeekNumber, CycleInfo, WorkoutSet } from "@fivethreeone/shared";
+export type { MainLift, WeekNumber } from "@fivethreeone/shared";
 
 export {
   calculateWeight,
@@ -8,4 +8,4 @@ export {
   getWeekPattern,
   generateWorkoutSets,
 } from "./calculations.js";
-export type { WeekSet, WeekPattern } from "./calculations.js";
+export type { WorkoutSet, WeekSet, WeekPattern } from "./calculations.js";

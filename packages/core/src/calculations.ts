@@ -1,4 +1,11 @@
-import type { WeekNumber, MainLift, WorkoutSet } from "@fivethreeone/shared";
+import type { WeekNumber, MainLift } from "@fivethreeone/shared";
+
+export interface WorkoutSet {
+  setNumber: number;
+  weight: number;
+  reps: number;
+  isAmrap: boolean;
+}
 
 export interface WeekSet {
   percentage: number;

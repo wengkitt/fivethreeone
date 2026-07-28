@@ -1,29 +1,10 @@
-export type UnitPreference = "kg" | "lb";
-
-export type PlateIncrement = 0.5 | 1 | 2.5 | 5;
-
-export interface Lifter {
-  id: string;
-  userId: string;
-  username: string;
-  unitPreference: UnitPreference;
-  plateIncrement: PlateIncrement;
-}
-
-export const MainLift = {
-  squat: "squat",
-  bench_press: "bench_press",
-  deadlift: "deadlift",
-  overhead_press: "overhead_press",
-} as const;
-
-export type MainLift = (typeof MainLift)[keyof typeof MainLift];
+export type MainLift = "squat" | "bench_press" | "deadlift" | "overhead_press";
 
 export const mainLiftValues = [
-  MainLift.squat,
-  MainLift.bench_press,
-  MainLift.deadlift,
-  MainLift.overhead_press,
+  "squat",
+  "bench_press",
+  "deadlift",
+  "overhead_press",
 ] as const satisfies readonly [string, ...string[]];
 
 export const LIFT_LABELS: Record<string, string> = {
@@ -37,42 +18,42 @@ export const LIFT_ORDER = ["squat", "bench_press", "deadlift", "overhead_press"]
 
 export type WeekNumber = 1 | 2 | 3 | 4;
 
-export type WorkoutStatus = "in_progress" | "completed";
+export type WorkoutDayStatus = "pending" | "completed" | "skipped";
 
-export const PrType = {
-  tm: "tm",
-  estimated_1rm: "estimated_1rm",
-  amrap_reps: "amrap_reps",
-} as const;
+export type BlockStatus = "active" | "completed";
 
-export type PrType = (typeof PrType)[keyof typeof PrType];
-
-export const prTypeValues = [
-  PrType.tm,
-  PrType.estimated_1rm,
-  PrType.amrap_reps,
-] as const satisfies readonly [string, ...string[]];
-
-export interface WorkoutSet {
-  setNumber: number;
+export interface RepMaxEntry {
   weight: number;
   reps: number;
-  isAmrap: boolean;
 }
 
-export interface AssistanceExerciseItem {
-  name: string;
-  sets: number;
-  reps: number;
-  weight: number | null;
-  notes: string | null;
-}
-
-export interface CycleInfo {
-  cycleId: string;
+export interface Block {
+  id: string;
   lifterId: string;
-  mainLift: MainLift;
-  trainingMax: number;
-  week: WeekNumber;
-  startDate: string;
+  status: BlockStatus;
+  squat: RepMaxEntry;
+  benchPress: RepMaxEntry;
+  deadlift: RepMaxEntry;
+  overheadPress: RepMaxEntry;
+  createdAt: string;
+}
+
+export interface WorkoutDay {
+  id?: string;
+  lift: MainLift;
+  cycleNumber: number;
+  weekNumber: WeekNumber;
+  status: WorkoutDayStatus;
+  completedAt: string | null;
+}
+
+export interface BlockDetail {
+  block: Block;
+  workoutDays: WorkoutDay[];
+}
+
+export interface Lifter {
+  id: string;
+  userId: string;
+  username: string;
 }

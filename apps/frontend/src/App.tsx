@@ -1,4 +1,4 @@
-import { MainLift, kgToLb } from "@fivethreeone/shared"
+import { LIFT_LABELS, mainLiftValues, kgToLb } from "@fivethreeone/shared"
 import { useAuth } from "./lib/useAuth"
 import { useNavigate } from "@tanstack/react-router"
 
@@ -34,12 +34,12 @@ function App() {
         <section className="rounded-lg border border-border p-6">
           <h2 className="mb-4 text-lg font-semibold">Available Lifts</h2>
           <ul className="space-y-2">
-            {Object.values(MainLift).map((lift) => (
+            {mainLiftValues.map((lift) => (
               <li
                 key={lift}
                 className="rounded-md bg-muted px-4 py-2 text-muted-foreground"
               >
-                {lift.replace(/_/g, " ")}
+                {LIFT_LABELS[lift]}
               </li>
             ))}
           </ul>

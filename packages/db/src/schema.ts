@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, real, unique, index } from "drizzle-orm/sqlite-core";
-import { mainLiftValues, prTypeValues } from "@fivethreeone/shared";
+import { mainLiftValues } from "@fivethreeone/shared";
 
 // ── Better Auth tables ──────────────────────────────────────────────
 
@@ -61,79 +61,32 @@ export const lifter = sqliteTable("lifter", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
 
-export const trainingMax = sqliteTable("training_max", {
+export const block = sqliteTable("block", {
   id: text("id").primaryKey(),
   lifterId: text("lifter_id").notNull().references(() => lifter.id, { onDelete: "cascade" }),
-  lift: text("lift", { enum: mainLiftValues }).notNull(),
-  oneRm: real("one_rm").notNull(),
-  trainingMaxValue: real("training_max").notNull(),
-  cycleNumber: integer("cycle_number").notNull().default(1),
+  status: text("status", { enum: ["active", "completed"] }).notNull().default("active"),
+  squatWeight: real("squat_weight").notNull(),
+  squatReps: integer("squat_reps").notNull(),
+  benchPressWeight: real("bench_press_weight").notNull(),
+  benchPressReps: integer("bench_press_reps").notNull(),
+  deadliftWeight: real("deadlift_weight").notNull(),
+  deadliftReps: integer("deadlift_reps").notNull(),
+  overheadPressWeight: real("overhead_press_weight").notNull(),
+  overheadPressReps: integer("overhead_press_reps").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 }, (table) => [
-  unique("training_max_lifter_lift").on(table.lifterId, table.lift),
-  index("training_max_lifter_id_idx").on(table.lifterId),
+  index("block_lifter_id_idx").on(table.lifterId),
 ]);
 
-export const workout = sqliteTable("workout", {
+export const workoutDay = sqliteTable("workout_day", {
   id: text("id").primaryKey(),
-  lifterId: text("lifter_id").notNull().references(() => lifter.id, { onDelete: "cascade" }),
+  blockId: text("block_id").notNull().references(() => block.id, { onDelete: "cascade" }),
   lift: text("lift", { enum: mainLiftValues }).notNull(),
-  weekNumber: integer("week_number").notNull(),
   cycleNumber: integer("cycle_number").notNull(),
-  status: text("status", { enum: ["in_progress", "completed"] }).notNull().default("in_progress"),
-  notes: text("notes"),
+  weekNumber: integer("week_number").notNull(),
+  status: text("status", { enum: ["pending", "completed", "skipped"] }).notNull().default("pending"),
   completedAt: integer("completed_at", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 }, (table) => [
-  index("workout_lifter_id_idx").on(table.lifterId),
-]);
-
-export const workoutSet = sqliteTable("workout_set", {
-  id: text("id").primaryKey(),
-  workoutId: text("workout_id").notNull().references(() => workout.id, { onDelete: "cascade" }),
-  setNumber: integer("set_number").notNull(),
-  targetPercentage: real("target_percentage").notNull(),
-  calculatedWeight: real("calculated_weight").notNull(),
-  actualWeight: real("actual_weight"),
-  targetReps: integer("target_reps").notNull(),
-  actualReps: integer("actual_reps"),
-  isAmrap: integer("is_amrap", { mode: "boolean" }).notNull().default(false),
-}, (table) => [
-  index("workout_set_workout_id_idx").on(table.workoutId),
-]);
-
-export const assistanceExercise = sqliteTable("assistance_exercise", {
-  id: text("id").primaryKey(),
-  workoutId: text("workout_id").notNull().references(() => workout.id, { onDelete: "cascade" }),
-  exerciseName: text("exercise_name").notNull(),
-  sets: integer("sets").notNull(),
-  reps: integer("reps").notNull(),
-  weight: real("weight"),
-  notes: text("notes"),
-  templateName: text("template_name"),
-}, (table) => [
-  index("assistance_exercise_workout_id_idx").on(table.workoutId),
-]);
-
-export const assistanceTemplate = sqliteTable("assistance_template", {
-  id: text("id").primaryKey(),
-  lifterId: text("lifter_id").notNull().references(() => lifter.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  exercises: text("exercises").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-}, (table) => [
-  index("assistance_template_lifter_id_idx").on(table.lifterId),
-]);
-
-export const personalRecord = sqliteTable("personal_record", {
-  id: text("id").primaryKey(),
-  lifterId: text("lifter_id").notNull().references(() => lifter.id, { onDelete: "cascade" }),
-  lift: text("lift", { enum: mainLiftValues }).notNull(),
-  prType: text("pr_type", { enum: prTypeValues }).notNull(),
-  value: real("value").notNull(),
-  achievedAt: integer("achieved_at", { mode: "timestamp" }).notNull(),
-  workoutId: text("workout_id").references(() => workout.id),
-}, (table) => [
-  index("personal_record_lifter_id_idx").on(table.lifterId),
+  unique("workout_day_block_lift_cycle_week").on(table.blockId, table.lift, table.cycleNumber, table.weekNumber),
+  index("workout_day_block_id_idx").on(table.blockId),
 ]);

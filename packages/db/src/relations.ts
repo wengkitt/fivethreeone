@@ -5,12 +5,8 @@ import {
   account,
   verification,
   lifter,
-  trainingMax,
-  workout,
-  workoutSet,
-  assistanceExercise,
-  assistanceTemplate,
-  personalRecord,
+  block,
+  workoutDay,
 } from "./schema.js";
 
 export const userRelations = relations(user, ({ one, many }) => ({
@@ -43,56 +39,20 @@ export const lifterRelations = relations(lifter, ({ one, many }) => ({
     fields: [lifter.userId],
     references: [user.id],
   }),
-  trainingMaxes: many(trainingMax),
-  workouts: many(workout),
-  assistanceTemplates: many(assistanceTemplate),
-  personalRecords: many(personalRecord),
+  blocks: many(block),
 }));
 
-export const trainingMaxRelations = relations(trainingMax, ({ one }) => ({
+export const blockRelations = relations(block, ({ one, many }) => ({
   lifter: one(lifter, {
-    fields: [trainingMax.lifterId],
+    fields: [block.lifterId],
     references: [lifter.id],
   }),
+  workoutDays: many(workoutDay),
 }));
 
-export const workoutRelations = relations(workout, ({ one, many }) => ({
-  lifter: one(lifter, {
-    fields: [workout.lifterId],
-    references: [lifter.id],
-  }),
-  sets: many(workoutSet),
-  assistanceExercises: many(assistanceExercise),
-}));
-
-export const workoutSetRelations = relations(workoutSet, ({ one }) => ({
-  workout: one(workout, {
-    fields: [workoutSet.workoutId],
-    references: [workout.id],
-  }),
-}));
-
-export const assistanceExerciseRelations = relations(assistanceExercise, ({ one }) => ({
-  workout: one(workout, {
-    fields: [assistanceExercise.workoutId],
-    references: [workout.id],
-  }),
-}));
-
-export const assistanceTemplateRelations = relations(assistanceTemplate, ({ one }) => ({
-  lifter: one(lifter, {
-    fields: [assistanceTemplate.lifterId],
-    references: [lifter.id],
-  }),
-}));
-
-export const personalRecordRelations = relations(personalRecord, ({ one }) => ({
-  lifter: one(lifter, {
-    fields: [personalRecord.lifterId],
-    references: [lifter.id],
-  }),
-  workout: one(workout, {
-    fields: [personalRecord.workoutId],
-    references: [workout.id],
+export const workoutDayRelations = relations(workoutDay, ({ one }) => ({
+  block: one(block, {
+    fields: [workoutDay.blockId],
+    references: [block.id],
   }),
 }));

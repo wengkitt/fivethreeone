@@ -20,7 +20,7 @@ export function RegisterPage() {
     if (err) {
       setError(err)
     } else {
-      navigate({ to: "/onboarding" })
+      navigate({ to: "/create-block" })
     }
   }
 
