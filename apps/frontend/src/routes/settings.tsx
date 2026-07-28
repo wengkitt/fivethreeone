@@ -11,8 +11,7 @@ import {
 import { useAuth } from "../lib/useAuth"
 import { LIFT_LABELS } from "@fivethreeone/shared"
 import { calculateTmFromOneRm } from "@fivethreeone/core"
-import { Settings, LogOut, Save, RotateCcw, Sun, Moon, Monitor } from "lucide-react"
-import { useTheme } from "../lib/theme"
+import { Settings, LogOut, Save, RotateCcw } from "lucide-react"
 
 const PLATE_OPTIONS = [0.5, 1, 2.5, 5] as const
 const ALL_LIFTS = ["squat", "bench_press", "deadlift", "overhead_press"] as const
@@ -35,8 +34,6 @@ export function SettingsPage() {
   const [savingPreferences, setSavingPreferences] = useState(false)
   const [savingTm, setSavingTm] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
-
-  const { theme, setTheme } = useTheme()
 
   const [profileError, setProfileError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
@@ -386,37 +383,6 @@ export function SettingsPage() {
               <Save className="size-4" />
               {savingPreferences ? "Saving..." : "Save"}
             </button>
-          </div>
-        </section>
-
-        {/* Appearance Section */}
-        <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
-          <h2 className="text-lg font-semibold">Appearance</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Choose your preferred theme.</p>
-
-          <div className="mt-4 flex gap-3">
-            {([
-              { value: "light" as const, label: "Light", icon: Sun },
-              { value: "dark" as const, label: "Dark", icon: Moon },
-              { value: "system" as const, label: "System", icon: Monitor },
-            ]).map(({ value, label, icon: Icon }) => {
-              const active = theme === value
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setTheme(value)}
-                  className={`flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-4 text-center transition-colors ${
-                    active
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
-                  }`}
-                >
-                  <Icon className="size-6" />
-                  <span className="text-sm font-medium">{label}</span>
-                </button>
-              )
-            })}
           </div>
         </section>
 

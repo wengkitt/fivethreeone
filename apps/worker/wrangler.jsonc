@@ -4,6 +4,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-26",
   "assets": {
+    "directory": "../frontend/dist",
     "not_found_handling": "single-page-application"
   },
   "observability": {
@@ -12,5 +13,12 @@
   "upload_source_maps": true,
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fivethreeone-db",
+      "database_id": "2d6915a0-d67a-4dc9-aad5-264d3367cd22"
+    }
   ]
 }

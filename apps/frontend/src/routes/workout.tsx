@@ -273,7 +273,7 @@ export function WorkoutPage() {
                 key={set.setNumber}
                 className={`rounded-xl border p-4 transition-colors ${
                   set.isAmrap
-                    ? "border-violet-300 bg-violet-50 dark:border-violet-700 dark:bg-violet-950/30"
+                    ? "border-violet-300 bg-violet-50"
                     : "border-border bg-card"
                 }`}
               >
@@ -288,7 +288,7 @@ export function WorkoutPage() {
                           {displayWeight(set.calculatedWeight)} {unit}
                         </p>
                         {set.isAmrap && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-200 px-2.5 py-0.5 text-xs font-semibold text-violet-800 dark:bg-violet-800 dark:text-violet-100">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-200 px-2.5 py-0.5 text-xs font-semibold text-violet-800">
                             <Flame className="size-3" />
                             AMRAP
                           </span>
