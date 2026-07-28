@@ -32,10 +32,6 @@ async function hasActiveBlock(): Promise<boolean> {
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  beforeLoad: async () => {
-    const session = await fetchSession()
-    if (session) throw redirect({ to: "/dashboard" })
-  },
   component: LandingPage,
 })
 

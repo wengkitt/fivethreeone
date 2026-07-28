@@ -29,3 +29,7 @@ export function getSessionData(): SessionData | null {
 export function setSessionData(session: SessionData | null) {
   sessionData = session
 }
+
+export function resetSessionCache() {
+  sessionPromise = null
+}

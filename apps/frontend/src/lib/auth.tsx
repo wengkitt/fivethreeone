@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react"
 import { loginUser, registerUser, logoutUser } from "./api"
-import { fetchSession, setSessionData } from "./auth-store"
+import { fetchSession, setSessionData, resetSessionCache } from "./auth-store"
 import { AuthContext, type SessionData } from "./auth-context"
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -19,6 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (login: string, password: string): Promise<string | null> => {
     const res = await loginUser(login, password)
     if (res.success && res.data) {
+      resetSessionCache()
       const fresh = await fetchSession()
       setSession(fresh)
       setSessionData(fresh)
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = useCallback(async (username: string, email: string, password: string): Promise<string | null> => {
     const res = await registerUser(username, email, password)
     if (res.success && res.data) {
+      resetSessionCache()
       const fresh = await fetchSession()
       setSession(fresh)
       setSessionData(fresh)
@@ -40,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await logoutUser()
+    resetSessionCache()
     setSession(null)
     setSessionData(null)
   }, [])

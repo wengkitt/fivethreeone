@@ -5,6 +5,7 @@ export interface WorkoutSet {
   weight: number;
   reps: number;
   isAmrap: boolean;
+  percentage: number;
 }
 
 export interface WeekSet {
@@ -89,5 +90,6 @@ export function generateWorkoutSets(
     weight: calculateWeight(tm, set.percentage, plateIncrement),
     reps: set.reps,
     isAmrap: set.isAmrap,
+    percentage: set.percentage,
   }));
 }

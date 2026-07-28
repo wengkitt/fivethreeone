@@ -162,31 +162,31 @@ describe("generateWorkoutSets", () => {
   it("generates correct sets for week 1 with 5kg increment", () => {
     const sets = generateWorkoutSets(100, 1, 5);
     expect(sets).toHaveLength(3);
-    expect(sets[0]).toEqual({ setNumber: 1, weight: 65, reps: 5, isAmrap: false });
-    expect(sets[1]).toEqual({ setNumber: 2, weight: 75, reps: 5, isAmrap: false });
-    expect(sets[2]).toEqual({ setNumber: 3, weight: 85, reps: 5, isAmrap: true });
+    expect(sets[0]).toEqual({ setNumber: 1, weight: 65, reps: 5, isAmrap: false, percentage: 65 });
+    expect(sets[1]).toEqual({ setNumber: 2, weight: 75, reps: 5, isAmrap: false, percentage: 75 });
+    expect(sets[2]).toEqual({ setNumber: 3, weight: 85, reps: 5, isAmrap: true, percentage: 85 });
   });
 
   it("generates correct sets for week 2", () => {
     const sets = generateWorkoutSets(100, 2, 5);
-    expect(sets[0]).toEqual({ setNumber: 1, weight: 70, reps: 3, isAmrap: false });
-    expect(sets[1]).toEqual({ setNumber: 2, weight: 80, reps: 3, isAmrap: false });
-    expect(sets[2]).toEqual({ setNumber: 3, weight: 90, reps: 3, isAmrap: true });
+    expect(sets[0]).toEqual({ setNumber: 1, weight: 70, reps: 3, isAmrap: false, percentage: 70 });
+    expect(sets[1]).toEqual({ setNumber: 2, weight: 80, reps: 3, isAmrap: false, percentage: 80 });
+    expect(sets[2]).toEqual({ setNumber: 3, weight: 90, reps: 3, isAmrap: true, percentage: 90 });
   });
 
   it("generates correct sets for week 3", () => {
     const sets = generateWorkoutSets(100, 3, 5);
-    expect(sets[0]).toEqual({ setNumber: 1, weight: 75, reps: 5, isAmrap: false });
-    expect(sets[1]).toEqual({ setNumber: 2, weight: 85, reps: 3, isAmrap: false });
-    expect(sets[2]).toEqual({ setNumber: 3, weight: 95, reps: 1, isAmrap: true });
+    expect(sets[0]).toEqual({ setNumber: 1, weight: 75, reps: 5, isAmrap: false, percentage: 75 });
+    expect(sets[1]).toEqual({ setNumber: 2, weight: 85, reps: 3, isAmrap: false, percentage: 85 });
+    expect(sets[2]).toEqual({ setNumber: 3, weight: 95, reps: 1, isAmrap: true, percentage: 95 });
   });
 
   it("week 4 has no AMRAP sets", () => {
     const sets = generateWorkoutSets(100, 4, 5);
     expect(sets.every((s) => !s.isAmrap)).toBe(true);
-    expect(sets[0]).toEqual({ setNumber: 1, weight: 40, reps: 5, isAmrap: false });
-    expect(sets[1]).toEqual({ setNumber: 2, weight: 50, reps: 5, isAmrap: false });
-    expect(sets[2]).toEqual({ setNumber: 3, weight: 60, reps: 5, isAmrap: false });
+    expect(sets[0]).toEqual({ setNumber: 1, weight: 40, reps: 5, isAmrap: false, percentage: 40 });
+    expect(sets[1]).toEqual({ setNumber: 2, weight: 50, reps: 5, isAmrap: false, percentage: 50 });
+    expect(sets[2]).toEqual({ setNumber: 3, weight: 60, reps: 5, isAmrap: false, percentage: 60 });
   });
 
   it("rounds weights down with 5lb increment", () => {

@@ -31,7 +31,22 @@ export function LandingPage() {
         </div>
       </main>
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        fivethreeone
+        <p>fivethreeone</p>
+        <p className="mx-auto mt-2 max-w-md leading-relaxed">
+          This app was made for personal use and is not affiliated with Jim
+          Wendler. Please buy his e-Book to learn more about 5/3/1. This site
+          is not intended to teach you the 5/3/1 program. I don't earn any
+          money from your purchase of the e-Book through{" "}
+          <a
+            href="https://www.jimwendler.com/collections/books-programs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            this link
+          </a>
+          .
+        </p>
       </footer>
     </div>
   )

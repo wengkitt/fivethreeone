@@ -44,6 +44,10 @@ _Avoid_: Phase, mesocycle
 Week 4 of a cycle, performed at 40%/50%/60% × 5. Optional — can be skipped. When skipped the cycle is considered complete and TM increments.
 _Avoid_: Recovery week, rest week
 
+**Workout Set**:
+One set within a Workout Day. Each Workout Day produces exactly 3 Workout Sets with predetermined percentage, reps, and AMRAP flag based on the week pattern (5/3/1 progression or deload). The percentage is stored on the set (not re-derived from position), and the weight is calculated from the Training Max × percentage rounded to the plate increment.
+_Avoid_: Set entry, exercise set
+
 **Workout Day**:
 One Main Lift on a given week. Tracked by a single tick when completed. No per-set data (weight, reps) is logged during the workout.
 _Avoid_: Session, workout set entry

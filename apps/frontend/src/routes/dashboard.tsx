@@ -4,7 +4,7 @@ import { getBlocks, getBlock, tickWorkoutDay, skipDeload, deleteBlock, type Bloc
 import { LIFT_LABELS, LIFT_ORDER, type WeekNumber, type WorkoutDay } from "@fivethreeone/shared"
 import type { MainLift } from "@fivethreeone/shared"
 import { estimate1RM, calculateTmFromOneRm, progressTm, generateWorkoutSets } from "@fivethreeone/core"
-import { Check, ChevronDown, ChevronUp, Plus, Trash2, Settings, History as HistoryIcon, Dumbbell } from "lucide-react"
+import { Check, Plus, Trash2, Settings, History as HistoryIcon, Dumbbell } from "lucide-react"
 
 const PLATE_INCREMENT = 2.5
 
@@ -98,8 +98,6 @@ export function DashboardPage() {
     workoutDays: WorkoutDay[]
   } | null>(null)
   const [selectedCycle, setSelectedCycle] = useState(1)
-  const [selectedWeek, setSelectedWeek] = useState(1)
-  const [showAllCycles, setShowAllCycles] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [ticking, setTicking] = useState<string | null>(null)
@@ -311,11 +309,8 @@ export function DashboardPage() {
                 return (
                   <button
                     key={cycle}
-                    onClick={() => {
-                      setSelectedCycle(cycle)
-                      setShowAllCycles(false)
-              const firstIncomplete = [1, 2, 3, 4].find((w) =>
-                !isWeekComplete(blockDetail.workoutDays, cycle, w as WeekNumber)
+                    onClick={() => setSelectedCycle(cycle)}
+                    className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${isWeekComplete(blockDetail.workoutDays, cycle, w as WeekNumber)
               ) ?? 4
               setSelectedWeek(firstIncomplete)
                     }}
@@ -428,9 +423,7 @@ export function DashboardPage() {
                               {set.isAmrap ? "+" : ""}
                             </span>
                             <span className="text-muted-foreground">
-                              {selectedWeek === 4
-                                ? ["40%", "50%", "60%"][set.setNumber - 1] ?? ""
-                                : ["65%", "75%", "85%"][set.setNumber - 1] ?? ""}
+                              {set.percentage}%
                             </span>
                           </div>
                         ))}
